@@ -32,11 +32,18 @@ class TankUtilityNGGauge extends HTMLElement {
       const style = document.createElement("style");
       style.textContent = `
         ha-card { overflow: hidden; }
-        .wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; }
+        .wrap { position: relative; width: 100%; aspect-ratio: 1 / 1; cursor: pointer; }
         .tank { width: 100%; height: 100%; display: block; }
         .label { position: absolute; left: 50%; transform: translateX(-50%); color: white; text-shadow: 0 0 5px rgba(0,0,0,.85); font-family: var(--ha-card-header-font-family, system-ui, sans-serif); text-align: center; pointer-events: none; user-select: none; }
         .level { top: 15%; font-size: 28px; font-weight: 800; line-height: 1; }
         .gallons { top: 23%; font-size: 15px; font-weight: 600; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 1px; border-top: 1px solid var(--divider-color); background: var(--divider-color); }
+        .metric { min-width: 0; padding: 10px 12px; background: var(--ha-card-background, var(--card-background-color)); }
+        .metric-label { color: var(--secondary-text-color); font-size: 11px; line-height: 1.2; }
+        .metric-value { margin-top: 3px; color: var(--primary-text-color); font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .actions { display: flex; border-top: 1px solid var(--divider-color); }
+        .action { flex: 1; border: 0; padding: 11px 12px; color: var(--primary-color); background: transparent; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .action + .action { border-left: 1px solid var(--divider-color); }
       `;
       this.shadowRoot.appendChild(style);
       this._root = document.createElement("div");
@@ -45,20 +52,21 @@ class TankUtilityNGGauge extends HTMLElement {
   }
 
   set hass(hass) { this._hass = hass; this._render(); }
-  getCardSize() { return 4; }
+  getCardSize() { return 5; }
 
   static getStubConfig() {
     return {
-      tank_level: "sensor.house_tank_tank_level",
-      gallons_remaining: "sensor.house_tank_gallons_remaining",
-      tank_capacity: "sensor.house_tank_tank_capacity",
-      delivery: "binary_sensor.house_tank_delivery_detected",
+      tank_level: "sensor.tank_level",
+      gallons_remaining: "sensor.gallons_remaining",
+      tank_capacity: "sensor.tank_capacity",
+      delivery: "binary_sensor.delivery_detected",
     };
   }
 
   _state(id) { return id ? this._hass?.states?.[id] : undefined; }
   _str(id, fallback = "") { return this._state(id)?.state ?? fallback; }
   _num(id, fallback = 0) { const value = Number(this._str(id, fallback)); return Number.isFinite(value) ? value : fallback; }
+  _escape(value) { return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[char])); }
 
   _orientation() {
     if (this._config.orientation) {
@@ -90,6 +98,58 @@ class TankUtilityNGGauge extends HTMLElement {
     return Number.isFinite(changed) && (Date.now() - changed) >= 0 && (Date.now() - changed) < 24 * 60 * 60 * 1000;
   }
 
+  _formatState(entityId) {
+    const entity = this._state(entityId);
+    if (!entity) return null;
+    const unit = entity.attributes?.unit_of_measurement;
+    return `${entity.state}${unit ? ` ${unit}` : ""}`;
+  }
+
+  _summaryMetrics() {
+    const definitions = [
+      ["average_consumption", "Average use"],
+      ["gas_consumption", "Gas total"],
+      ["energy_consumption", "Energy equivalent"],
+      ["energy_remaining", "Energy remaining"],
+      ["cost", "Cost"],
+    ];
+    return definitions
+      .filter(([key]) => this._config[key] && this._state(this._config[key]))
+      .map(([key, label]) => ({ label, value: this._formatState(this._config[key]) }));
+  }
+
+  _showMoreInfo(entityId) {
+    if (!entityId) return;
+    this.dispatchEvent(new CustomEvent("hass-more-info", {
+      bubbles: true,
+      composed: true,
+      detail: { entityId },
+    }));
+  }
+
+  _navigate(path) {
+    if (!path) return;
+    history.pushState(null, "", path);
+    window.dispatchEvent(new CustomEvent("location-changed"));
+  }
+
+  _handleAction(action, defaultEntity) {
+    const config = action ?? { action: "more-info" };
+    switch (config.action ?? "more-info") {
+      case "none":
+        return;
+      case "navigate":
+        this._navigate(config.navigation_path);
+        return;
+      case "url":
+        if (config.url_path) window.open(config.url_path, "_blank", "noopener,noreferrer");
+        return;
+      case "more-info":
+      default:
+        this._showMoreInfo(config.entity ?? defaultEntity);
+    }
+  }
+
   _render() {
     if (!this._hass || !this._config || !this._root) return;
     const percent = Math.max(0, Math.min(100, this._num(this._config.tank_level, 0)));
@@ -105,12 +165,21 @@ class TankUtilityNGGauge extends HTMLElement {
     const fillY = regionBottom - ((percent / 100) * (regionBottom - regionTop));
     const clipRects = tank.regions.map((r) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="${r.rx}" ry="${r.ry}"/>`).join("");
     const delivery = this._deliveryFlashActive() ? `<g><rect x="1.5" y="1.5" width="61" height="61" rx="4" fill="none" stroke="#00e676" stroke-width="1.5" opacity="0"><animate attributeName="opacity" values="0;0.95;0" dur="1.2s" repeatCount="indefinite"/></rect><text x="32" y="6.5" text-anchor="middle" font-size="3.4" font-family="sans-serif" font-weight="700" fill="#00e676" opacity="0">DELIVERY<animate attributeName="opacity" values="0;1;0" dur="1.2s" repeatCount="indefinite"/></text></g>` : "";
-    const gallonsState = this._state(this._config.gallons_remaining);
-    const gallons = gallonsState ? `${gallonsState.state}${gallonsState.attributes?.unit_of_measurement ? ` ${gallonsState.attributes.unit_of_measurement}` : ""}` : "—";
-    this._root.innerHTML = `<ha-card><div class="wrap"><svg class="tank" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="tank-fill">${clipRects}</clipPath></defs><g clip-path="url(#tank-fill)"><rect x="${regionLeft}" y="${fillY}" width="${regionRight - regionLeft}" height="${regionBottom - fillY}" fill="${color}" opacity="0.55"/><rect x="${regionLeft}" y="${fillY}" width="${regionRight - regionLeft}" height="0.45" fill="white" opacity="0.35"/></g><image href="${imageUrl}" x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet"/>${delivery}</svg><div class="label level">${percent.toFixed(0)}%</div><div class="label gallons">${gallons}</div></div></ha-card>`;
+    const gallons = this._formatState(this._config.gallons_remaining) ?? "—";
+    const metrics = this._summaryMetrics();
+    const summary = metrics.length ? `<div class="summary">${metrics.map((metric) => `<div class="metric"><div class="metric-label">${this._escape(metric.label)}</div><div class="metric-value">${this._escape(metric.value)}</div></div>`).join("")}</div>` : "";
+    const historyEntity = this._config.history_entity ?? this._config.gas_consumption ?? this._config.energy_consumption ?? this._config.tank_level;
+    const showEnergy = this._config.show_energy_link !== false && Boolean(this._config.gas_consumption || this._config.energy_consumption);
+    const actions = `<div class="actions"><button class="action history-action" type="button">History</button>${showEnergy ? `<button class="action energy-action" type="button">Energy</button>` : ""}</div>`;
+
+    this._root.innerHTML = `<ha-card><div class="wrap"><svg class="tank" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="tank-fill">${clipRects}</clipPath></defs><g clip-path="url(#tank-fill)"><rect x="${regionLeft}" y="${fillY}" width="${regionRight - regionLeft}" height="${regionBottom - fillY}" fill="${color}" opacity="0.55"/><rect x="${regionLeft}" y="${fillY}" width="${regionRight - regionLeft}" height="0.45" fill="white" opacity="0.35"/></g><image href="${imageUrl}" x="0" y="0" width="64" height="64" preserveAspectRatio="xMidYMid meet"/>${delivery}</svg><div class="label level">${percent.toFixed(0)}%</div><div class="label gallons">${this._escape(gallons)}</div></div>${summary}${actions}</ha-card>`;
+
+    this._root.querySelector(".wrap")?.addEventListener("click", () => this._handleAction(this._config.tap_action, this._config.tank_level));
+    this._root.querySelector(".history-action")?.addEventListener("click", () => this._showMoreInfo(historyEntity));
+    this._root.querySelector(".energy-action")?.addEventListener("click", () => this._navigate(this._config.energy_dashboard_path ?? "/energy"));
   }
 }
 
 customElements.define(CARD_TAG, TankUtilityNGGauge);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: CARD_TAG, name: "Tank Utility NG Gauge", description: "Included Tank Utility NG propane gauge with capacity/orientation-aware artwork, fill level, and delivery indication." });
+window.customCards.push({ type: CARD_TAG, name: "Tank Utility NG Gauge", description: "Included Tank Utility NG propane gauge with capacity/orientation-aware artwork, Energy Dashboard navigation, history access, and optional consumption summaries." });
