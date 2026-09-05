@@ -1,17 +1,17 @@
 {
   "domain": "tank_utility_ng",
   "name": "Tank Utility NG",
-  "version": "0.6.0",
   "codeowners": [
     "@bronzedragon"
   ],
   "config_flow": true,
   "documentation": "https://github.com/bronzedragon/home-assistant-tank-utility-ng#readme",
-  "issue_tracker": "https://github.com/bronzedragon/home-assistant-tank-utility-ng/issues",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "requirements": [],
+  "issue_tracker": "https://github.com/bronzedragon/home-assistant-tank-utility-ng/issues",
   "loggers": [
     "custom_components.tank_utility_ng"
-  ]
+  ],
+  "requirements": [],
+  "version": "0.6.1"
 }
