@@ -97,6 +97,10 @@ class TankUtilityCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             cap_mode = self.entry.options.get(CONF_CAPACITY_UNIT_MODE, DEFAULT_CAPACITY_UNIT_MODE)
             capacity_unit_detected = cap_mode if cap_mode in ("L", "gal") else ("L" if float(raw_capacity or 0) >= 600 else "gal")
             gallons = capacity * level_pct / 100.0
+
+            # last_gallons is an accepted low-water mark, not simply the previous raw
+            # sample. Ignoring small upward movements prevents gauge/temperature jitter
+            # from being counted again when the reading falls back to its prior level.
             prev_gal = float(self.state["last_gallons"].get(dev_id, gallons))
             prev_pct = (prev_gal / capacity * 100.0) if capacity else level_pct
             delta_gal = gallons - prev_gal
@@ -104,11 +108,17 @@ class TankUtilityCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             pct_th = float(self.entry.options.get(CONF_REFILL_PERCENT_THRESHOLD, DEFAULT_REFILL_PERCENT_THRESHOLD))
             gal_th = float(self.entry.options.get(CONF_REFILL_GALLON_MIN, DEFAULT_REFILL_GALLON_MIN))
             refill = (delta_pct >= pct_th) or (delta_gal >= gal_th)
-            consumed = 0.0 if refill else max(prev_gal - gallons, 0.0)
+
             total_used = float(self.state["total_used"].get(dev_id, 0.0))
-            if not refill:
+            if refill:
+                consumed = 0.0
+                accepted_gallons = gallons
+            else:
+                consumed = max(prev_gal - gallons, 0.0)
                 total_used += consumed
-            self.state["last_gallons"][dev_id] = gallons
+                accepted_gallons = gallons if gallons < prev_gal else prev_gal
+
+            self.state["last_gallons"][dev_id] = accepted_gallons
             self.state["total_used"][dev_id] = total_used
             temp_raw = last.get("temperature")
             temp_unit = self._detect_temp_unit(temp_raw)

@@ -22,14 +22,14 @@ class Desc:
 
 SENSORS = [
     Desc("level_pct", "Tank Level", PERCENTAGE, None, SensorStateClass.MEASUREMENT, None, "mdi:propane-tank"),
-    Desc("gallons_remaining", "Gallons Remaining", UnitOfVolume.GALLONS, None, SensorStateClass.MEASUREMENT, None, "mdi:propane-tank-outline"),
+    Desc("gallons_remaining", "Gallons Remaining", UnitOfVolume.GALLONS, SensorDeviceClass.VOLUME_STORAGE, SensorStateClass.MEASUREMENT, None, "mdi:propane-tank-outline"),
     Desc("temperature_c", "Tank Temperature", UnitOfTemperature.CELSIUS, SensorDeviceClass.TEMPERATURE, SensorStateClass.MEASUREMENT, None, "mdi:thermometer"),
     Desc("avg_consumption_gpd", "Average Consumption", "gal/day", None, SensorStateClass.MEASUREMENT, None, "mdi:chart-line"),
     Desc("estimated_fill_date", "Estimated Refill Date", None, SensorDeviceClass.TIMESTAMP, None, None, "mdi:calendar-clock"),
 ]
 DIAG_SENSORS = [
     Desc("last_updated", "Last Reading", None, SensorDeviceClass.TIMESTAMP, None, EntityCategory.DIAGNOSTIC, "mdi:clock-outline"),
-    Desc("capacity_gal", "Tank Capacity", UnitOfVolume.GALLONS, None, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC, "mdi:propane-tank"),
+    Desc("capacity_gal", "Tank Capacity", UnitOfVolume.GALLONS, SensorDeviceClass.VOLUME_STORAGE, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC, "mdi:propane-tank"),
     Desc("orientation", "Tank Orientation", None, None, None, EntityCategory.DIAGNOSTIC, "mdi:rotate-orbit"),
     Desc("battery_level", "Battery Level", None, None, None, EntityCategory.DIAGNOSTIC, "mdi:battery"),
     Desc("telemetry_rssi", "Signal Strength", "dBm", SensorDeviceClass.SIGNAL_STRENGTH, SensorStateClass.MEASUREMENT, EntityCategory.DIAGNOSTIC, "mdi:wifi-strength-2"),
@@ -92,6 +92,7 @@ class TankUtilitySensor(_Base):
         return attrs
 
 class PropaneConsumedGallonsTotal(_Base):
+    _attr_device_class = SensorDeviceClass.VOLUME
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_native_unit_of_measurement = UnitOfVolume.GALLONS
     def __init__(self, coordinator, dev_id: str):
@@ -117,7 +118,7 @@ class EnergyConsumedKwhTotal(_Base):
     def native_value(self): return round(float(self.coordinator.data[self.dev_id].get("total_used_gal") or 0.0)*PROPANE_KWH_PER_GALLON,3)
 
 class PropaneEnergyRemainingKwh(_Base):
-    _attr_device_class=SensorDeviceClass.ENERGY; _attr_state_class=None; _attr_native_unit_of_measurement="kWh"
+    _attr_device_class=SensorDeviceClass.ENERGY_STORAGE; _attr_state_class=SensorStateClass.MEASUREMENT; _attr_native_unit_of_measurement="kWh"
     def __init__(self, coordinator, dev_id: str):
         super().__init__(coordinator, dev_id); short_id=coordinator.data[dev_id].get("short_device_id") or dev_id
         self._attr_unique_id=f"{short_id}_energy_remaining_kwh"; self._attr_name="Energy Remaining"; self._attr_icon="mdi:lightning-bolt-outline"; self._attr_suggested_object_id=slugify(f"{short_id}_energy_remaining_kwh")
