@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {"user": {"title": "Tank Utility NG", "description": "Enter your Tank Utility email/password. Devices will be auto-discovered."}},
+    "error": {"cannot_connect": "Failed to connect or authenticate.", "invalid_auth": "Invalid email or password."}
+  },
+  "options": {"step": {"init": {"data": {
+    "update_interval_hours": "Update interval (hours)",
+    "temp_unit_mode": "Temperature unit reported by Tank Utility",
+    "capacity_unit_mode": "Tank capacity unit reported by Tank Utility",
+    "refill_percent_threshold": "Refill detection threshold (% increase)",
+    "refill_gallon_min": "Refill detection threshold (gallons increase)"
+  }}}},
+  "issues": {"entity_id_migration": {
+    "title": "Entity ID migration",
+    "description": "This integration now suggests entity IDs based on the Tank Utility short device ID (e.g., **{example}**). Home Assistant does not automatically rename existing entity IDs once they are created.\\n\\nIf your entities still use the old prefix (for example, based on the device name), you can:\\n\\n- Rename them in **Settings → Devices & services → Entities**, or\\n- Remove the integration and delete the old entities, then add it again to get IDs starting with **{short_id}**.\\n"
+  }}
+}
