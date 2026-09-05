@@ -1,0 +1,34 @@
+DOMAIN = "tank_utility_ng"
+LEGACY_DOMAIN = "tank_utility"
+
+CONF_DEVICES = "devices"
+
+DEFAULT_UPDATE_HOURS = 2
+
+API_BASE = "https://data.tankutility.com/api"
+ENDPOINT_TOKEN = "/getToken"
+ENDPOINT_DEVICES = "/devices"
+
+REFILL_PERCENT_THRESHOLD = 5.0
+REFILL_GALLON_MIN = 10.0
+
+PROPANE_KWH_PER_GALLON = 26.8
+
+# Approx conversion used for Energy Dashboard gas (ft3)
+GAL_PROPANE_TO_FT3 = 35.97
+
+LITERS_PER_GALLON = 3.785411784
+GALLONS_PER_LITER = 1.0 / LITERS_PER_GALLON
+
+# Options
+CONF_TEMP_UNIT_MODE = "temp_unit_mode"          # auto | C | F
+CONF_CAPACITY_UNIT_MODE = "capacity_unit_mode"  # auto | gal | L
+CONF_REFILL_PERCENT_THRESHOLD = "refill_percent_threshold"
+CONF_REFILL_GALLON_MIN = "refill_gallon_min"
+CONF_UPDATE_INTERVAL_HOURS = "update_interval_hours"
+
+DEFAULT_TEMP_UNIT_MODE = "auto"
+DEFAULT_CAPACITY_UNIT_MODE = "auto"
+DEFAULT_REFILL_PERCENT_THRESHOLD = REFILL_PERCENT_THRESHOLD
+DEFAULT_REFILL_GALLON_MIN = REFILL_GALLON_MIN
+DEFAULT_UPDATE_INTERVAL_HOURS = DEFAULT_UPDATE_HOURS
