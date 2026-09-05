@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<title>Propane Tank 500 gal</title>
+<g stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="5" y="20" width="54" height="24" rx="12"/>
+  <rect x="26" y="10" width="12" height="10" rx="5"/>
+  <path d="M32 10v-3"/>
+  <circle cx="32" cy="6.5" r="1.4"/>
+  <path d="M16 44v8M48 44v8"/>
+  <path d="M11 52h12M41 52h12"/>
+</g>
+</svg>
