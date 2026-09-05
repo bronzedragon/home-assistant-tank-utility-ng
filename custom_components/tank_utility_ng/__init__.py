@@ -8,11 +8,13 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import slugify
 
 from .const import DOMAIN, LEGACY_DOMAIN
+from .frontend import async_register_frontend
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    await async_register_frontend(hass)
     legacy = config.get(LEGACY_DOMAIN)
     if isinstance(legacy, list):
         for conf in legacy:

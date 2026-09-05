@@ -16,6 +16,7 @@ A modern Home Assistant custom integration for Tank Utility propane tank monitor
 - Entity-ID migration guidance
 - Local Home Assistant brand icon support
 - HACS-managed installation and updates
+- **Included `tank-utility-ng-gauge` Lovelace card** with capacity/orientation-aware tank artwork, static fill level, gauge colors, and delivery highlighting
 
 ## HACS installation
 
@@ -26,9 +27,31 @@ A modern Home Assistant custom integration for Tank Utility propane tank monitor
 5. Restart Home Assistant.
 6. Add or manage the integration under **Settings → Devices & services**.
 
+The integration serves and registers its bundled Lovelace card automatically when Lovelace resources are storage-managed. If your Lovelace resources are YAML-managed, add `/tank_utility_ng/frontend/tank-utility-ng-gauge.js` as a JavaScript module manually.
+
 ### Migrating an existing manual installation
 
 If Tank Utility NG is already installed manually, do **not** delete its Home Assistant config entry. Back up `/config/custom_components/tank_utility_ng`, then let HACS download the integration over the same component directory and restart Home Assistant. The existing config entry and entities are retained because HACS is changing the code deployment method, not the Home Assistant configuration entry.
+
+## Included Lovelace card
+
+```yaml
+type: custom:tank-utility-ng-gauge
+tank_level: sensor.house_tank_tank_level
+gallons_remaining: sensor.house_tank_gallons_remaining
+tank_capacity: sensor.house_tank_tank_capacity
+delivery: binary_sensor.house_tank_delivery_detected
+```
+
+`orientation` normally comes directly from the `orientation` attribute of the configured `tank_capacity` sensor. You can instead provide an orientation entity explicitly:
+
+```yaml
+orientation: sensor.house_tank_tank_capacity_orientation
+```
+
+The card automatically selects the nearest included tank artwork for the reported capacity. Included horizontal artwork covers 250, 320, 500, 1000, 1500, 2000, and 4000 gallon tanks. Included vertical/manifold artwork covers 50, 120, 240 (2×120), 360 (3×120), and 480 (4×120) gallon configurations.
+
+Fill color defaults to red through 25%, amber through 50%, and green above 50%. A detected delivery is highlighted for up to 24 hours when a delivery timestamp is available, with backward-compatible behavior for the current delivery binary sensor.
 
 ## Manual installation
 
@@ -47,8 +70,8 @@ GitHub releases use tags matching the integration version in `manifest.json`.
 Example:
 
 ```text
-manifest.json: 0.6.0
-GitHub release: v0.6.0
+manifest.json: 0.6.2
+GitHub release: v0.6.2
 ```
 
 ## Support

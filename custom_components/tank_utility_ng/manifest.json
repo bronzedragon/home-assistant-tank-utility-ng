@@ -5,6 +5,11 @@
     "@bronzedragon"
   ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "lovelace"
+  ],
   "documentation": "https://github.com/bronzedragon/home-assistant-tank-utility-ng#readme",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
@@ -13,5 +18,5 @@
     "custom_components.tank_utility_ng"
   ],
   "requirements": [],
-  "version": "0.6.1"
+  "version": "0.6.2"
 }
